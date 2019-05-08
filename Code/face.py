@@ -210,7 +210,7 @@ def MasterCatch(imgTarget, descriptors):
     faceInThr = []
     facerRectangle = []
     facerSimilarRectangle = []
-    catch = None
+    catch = []
     if(len(dets) < 1):
         return catch, facerSimilarRectangle, facerRectangle
 
