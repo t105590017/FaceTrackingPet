@@ -76,7 +76,11 @@ def ScanningMaster(img):
     catchFileCountLimit = int(config.get('MasterSample', 'Threshold'))
     catchFileTotal = int(config.get('MasterSample', 'Total'))
     MasterSamplePath = str(config.get('MasterSample', 'Path'))
-    catchFileCount = len(glob.glob(os.path.join(config.get('MasterSample', 'Path'), "*.jpg")))
+
+    if not os.path.isdir(MasterSamplePath):
+        os.mkdir(MasterSamplePath)
+
+    catchFileCount = len(glob.glob(os.path.join(MasterSamplePath, "*.jpg")))
 
     if catchFileCount >= catchFileTotal :
         return True
@@ -210,7 +214,7 @@ def MasterCatch(imgTarget, descriptors):
     faceInThr = []
     facerRectangle = []
     facerSimilarRectangle = []
-    catch = []
+    catch = None
     if(len(dets) < 1):
         return catch, facerSimilarRectangle, facerRectangle
 
