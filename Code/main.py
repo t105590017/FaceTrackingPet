@@ -16,6 +16,10 @@ tracker = dlib.correlation_tracker()            # 導入correlation_tracker()
 detector = dlib.get_frontal_face_detector()     # 載入正臉檢測器 Dlib 的人臉偵測器
 
 
+def HardwareInterface(x, y):
+    print("Hardware => x :", x, "% y :", y, "%")
+
+
 def handle_error(e):
     '''處理 child process 的錯誤，不然 code 寫錯時，不會回報任何錯誤'''
     traceback.print_exception(type(e), e, e.__traceback__)
@@ -64,7 +68,8 @@ if __name__ == '__main__':
 
     q = multiprocessing.Manager().Queue()
     multiprocessing.freeze_support()
-    with Pool(processes=3) as p:
+    cpus = multiprocessing.cpu_count()
+    with Pool(processes=cpus) as p:
         while(cap.isOpened()):
             # region cap read
             ret, img = cap.read()
@@ -77,8 +82,7 @@ if __name__ == '__main__':
                 if not MasterExist:
                     catch, facerSimilarRectangle, facerRectangle = face.MasterCatch(
                         img, descriptors)
-                    if(len(facerSimilarRectangle) == 1):
-                        catch = facerSimilarRectangle[0]
+                    if(len(facerSimilarRectangle) >= 1):
                         tracker.start_track(img, catch)
                         MasterExist = True
                 else:
@@ -105,26 +109,35 @@ if __name__ == '__main__':
             # endregion
 
             # region check catch area
-            if catch is not None:
-                p.apply_async(TrackerAreaExistFace,
-                              args=(q, img[int(catch.top()):int(catch.bottom()),
-                                           int(catch.left()):int(catch.right())], ),
-                              error_callback=handle_error)
+            if bool(config.get('Enable', 'MultiProcessing')):
+                if catch is not None:
+                    p.apply_async(TrackerAreaExistFace,
+                                  args=(q, img[int(catch.top()):int(catch.bottom()),
+                                               int(catch.left()):int(catch.right())], ),
+                                  error_callback=handle_error)
 
-            if(not q.empty()):
-                faceInCatch = q.get()
-                if(faceInCatch):
-                    faceLostFramesCount = 0
-                    print("get face : True")
-                else:
-                    faceLostFramesCount += 1
-                    faceLostFrames = int(config.get('Limit',
-                                                    'FaceTarckingLostFrames'))
-                    if(faceLostFramesCount >= faceLostFrames):
+                if(not q.empty()):
+                    faceInCatch = q.get()
+                    if(faceInCatch):
                         faceLostFramesCount = 0
-                        MasterExist = False
-                    print("get face : False")
+                        print("get face : True")
+                    else:
+                        faceLostFramesCount += 1
+                        faceLostFrames = int(config.get('Limit',
+                                                        'FaceTarckingLostFrames'))
+                        if(faceLostFramesCount >= faceLostFrames):
+                            faceLostFramesCount = 0
+                            MasterExist = False
+                        print("get face : False")
             # endregion
+
+            imgH, imgW = img.shape[:2]
+            if catch is not None:
+                catchX = (int(catch.left()) + int(catch.right())) / 2
+                catchY = (int(catch.top()) + int(catch.bottom())) / 2
+                HardwareInterface(catchX * 100 / imgW, catchY * 100 / imgH)
+            else:
+                HardwareInterface(50, 50)
 
             # region keyCode
             keyCode = cv2.waitKey(1)
