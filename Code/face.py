@@ -20,36 +20,6 @@ facerec = dlib.face_recognition_model_v1(
     "Bat\\dlib_face_recognition_resnet_model_v1.dat")
 
 
-def CatchFace(img):
-    
-    # 偵測人臉
-    face_rects, scores, idx = detector.run(img, 0)
-
-    # 取出所有偵測的結果
-    for i, d in enumerate(face_rects):
-        x1 = d.left()
-        y1 = d.top()
-        x2 = d.right()
-        y2 = d.bottom()
-
-        imageVar = getImageVar(img[y1:y2, x1:x2])
-
-        text = "%2.2f(%d)" % (scores[i], idx[i])
-
-        print(int(imageVar))
-
-        # if(int(imageVar) > 100):
-        #     cv2.imwrite('Photo\\MasterSample' +
-        #                 str(int(imgSet)) + '.jpg', img[y1:y2, x1:x2])
-
-        # 以方框標示偵測到的人臉
-        cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 4, cv2.LINE_AA)
-        cv2.putText(img, text, (x1, y1), cv2.FONT_HERSHEY_DUPLEX,
-                    0.7, (255, 255, 255), 1, cv2.LINE_AA)
-
-    return img
-
-
 def CheckSampleWithCam(imgTarget, descriptors):
     # 對需識別人臉進行同樣處理
     # 提取描述子
@@ -59,7 +29,7 @@ def CheckSampleWithCam(imgTarget, descriptors):
     if(len(dets) < 1):
         return
 
-    for k, d in enumerate(dets):
+    for d in dets:
         shape = predictor(imgTarget, d)
         face_descriptor = facerec.compute_face_descriptor(imgTarget, shape)
         d_test = numpy.array(face_descriptor)
@@ -128,7 +98,7 @@ def GetSampleDescriptors():
         # 1.人臉檢測
         dets = detector(img, 0)
         print("Number of faces detected: {}".format(len(dets)))
-        for k, d in enumerate(dets):
+        for d in dets:
             # 2.關鍵點檢測
             shape = predictor(img, d)
             # 畫出人臉區域和和關鍵點
@@ -146,7 +116,7 @@ def Get68FaceFromImg(img):
     # 1.人臉檢測
     dets = detector(img, 0)
     print("Number of faces detected: {}".format(len(dets)))
-    for k, d in enumerate(dets):
+    for d in dets:
         # 2.關鍵點檢測
         shape = predictor(img, d)
         # 畫出人臉區域和和關鍵點
@@ -164,7 +134,7 @@ def Get68FaceFromImg(img):
 # 在臉上顯示方塊
 def PrintRectangleFaceWithdDetector(img, face_rects=[], rgb = (0, 255, 0)):
 
-    for i, d in enumerate(face_rects):
+    for d in face_rects:
         x1 = d.left()
         y1 = d.top()
         x2 = d.right()
@@ -174,34 +144,6 @@ def PrintRectangleFaceWithdDetector(img, face_rects=[], rgb = (0, 255, 0)):
         cv2.rectangle(img, (x1, y1), (x2, y2), rgb, 4, cv2.LINE_AA)
 
     return img
-
-# 在臉上顯示68個關鍵點
-def Print68Face(img):
-    img_gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-
-    # 人臉數rects
-    rects = detector(img_gray, 0)
-    for i in range(len(rects)):
-        landmarks = numpy.matrix(
-            [[p.x, p.y] for p in predictor(img, rects[i]).parts()])  # 人臉關鍵點識別
-        for idx, point in enumerate(landmarks):  # enumerate函式遍歷序列中的元素及它們的下標
-            # 68點的座標
-            pos = (point[0, 0], point[0, 1])
-            print(idx, pos)
-
-            # 利用cv2.circle給每個特徵點畫一個圈，共68個
-            cv2.circle(img, pos, 5, color=(0, 255, 0))
-            # 利用cv2.putText輸出1-68
-            font = cv2.FONT_HERSHEY_SIMPLEX
-            # 各引數依次是：圖片，新增的文字，座標，字型，字型大小，顏色，字型粗細
-            cv2.putText(img, str(idx+1), pos, font, 0.8,
-                        (0, 0, 255), 1, cv2.LINE_AA)
-
-    return img
-    # cv2.namedWindow("img", 2)
-    # cv2.imshow("img", img)       #顯示影象
-    # cv2.waitKey(0)        #等待按鍵，隨後退出
-
 
 def MasterCatch(imgTarget, descriptors):
     euclideanDistanceThreshold = float(config.get(
@@ -218,7 +160,7 @@ def MasterCatch(imgTarget, descriptors):
     if(len(dets) < 1):
         return catch, facerSimilarRectangle, facerRectangle
 
-    for k, d in enumerate(dets):
+    for d in dets:
         shape = predictor(imgTarget, d)
         face_descriptor = facerec.compute_face_descriptor(imgTarget, shape)
         d_test = numpy.array(face_descriptor)
@@ -232,20 +174,11 @@ def MasterCatch(imgTarget, descriptors):
 
         distance /= len(descriptors)
 
-        x1 = d.left()
-        y1 = d.top()
-        x2 = d.right()
-        y2 = d.bottom()
         facerRectangle.append(d)
-        # cv2.rectangle(imgTarget, (x1, y1), (x2, y2),
-        #               (0, 255, 0), 4, cv2.LINE_AA)
 
         # 如果在允許範圍之內則加入faceInThr
         if(distance < euclideanDistanceThreshold):
             facerSimilarRectangle.append(d)
-            # cv2.rectangle(imgTarget, (x1, y1), (x2, y2),
-            #               (255, 0, 0), 4, cv2.LINE_AA)
-            # faceInThr.append([d, distance])
 
     if len(faceInThr) <= 1:
         return catch, facerSimilarRectangle, facerRectangle
@@ -256,8 +189,6 @@ def MasterCatch(imgTarget, descriptors):
             minDisFace = d
 
     catch = minDisFace[0]
-    # cv2.rectangle(imgTarget, (catch.left(), catch.top()),
-    #               (catch.right(), catch.bottom()), (0, 0, 255), 4, cv2.LINE_AA)
 
     return catch, facerSimilarRectangle, imgTarget
 
