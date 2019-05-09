@@ -52,7 +52,7 @@ def ScanningMaster(img):
 
     catchFileCount = len(glob.glob(os.path.join(MasterSamplePath, "*.jpg")))
 
-    if catchFileCount >= catchFileTotal :
+    if catchFileCount >= catchFileTotal:
         return True
 
     # 偵測人臉
@@ -62,7 +62,7 @@ def ScanningMaster(img):
         return False
 
     faceImg = img[face_rects[0].top(): face_rects[0].bottom(),
-                    face_rects[0].left(): face_rects[0].right()]
+                  face_rects[0].left(): face_rects[0].right()]
     imageVar = getImageVar(faceImg)
 
     print(imageVar)
@@ -83,6 +83,8 @@ def getImageVar(image):
     return imageVar
 
 # 取得樣本描述子們
+
+
 def GetSampleDescriptors():
     # 樣本目錄
     faces_folder_path = str(config.get('MasterSample', 'Path'))
@@ -109,6 +111,7 @@ def GetSampleDescriptors():
             descriptors.append(v)
     return descriptors
 
+
 def Get68FaceFromImg(img):
     # 候選人臉描述子list
     descriptors = []
@@ -132,7 +135,9 @@ def Get68FaceFromImg(img):
     return descriptors
 
 # 在臉上顯示方塊
-def PrintRectangleFaceWithdDetector(img, face_rects=[], rgb = (0, 255, 0)):
+
+
+def PrintRectangleFaceWithdDetector(img, face_rects=[], rgb=(0, 255, 0)):
 
     for d in face_rects:
         x1 = d.left()
@@ -144,6 +149,7 @@ def PrintRectangleFaceWithdDetector(img, face_rects=[], rgb = (0, 255, 0)):
         cv2.rectangle(img, (x1, y1), (x2, y2), rgb, 4, cv2.LINE_AA)
 
     return img
+
 
 def MasterCatch(imgTarget, descriptors):
     euclideanDistanceThreshold = float(config.get(
@@ -179,9 +185,10 @@ def MasterCatch(imgTarget, descriptors):
         # 如果在允許範圍之內則加入faceInThr
         if(distance < euclideanDistanceThreshold):
             facerSimilarRectangle.append(d)
+            faceInThr.append([d, distance])
 
     if len(faceInThr) <= 1:
-        return catch, facerSimilarRectangle, facerRectangle
+        return facerSimilarRectangle[0] if len(facerSimilarRectangle) == 1 else None, facerSimilarRectangle, facerRectangle
 
     minDisFace = faceInThr[0]
     for i, d in enumerate(faceInThr):
@@ -191,4 +198,3 @@ def MasterCatch(imgTarget, descriptors):
     catch = minDisFace[0]
 
     return catch, facerSimilarRectangle, imgTarget
-
