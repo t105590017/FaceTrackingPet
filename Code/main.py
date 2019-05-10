@@ -5,12 +5,16 @@ import dlib
 import shutil
 import glob
 import os
+import serial
 
 config = configparser.ConfigParser()
 config.read('Config.ini')
 
-tracker = dlib.correlation_tracker()   # 導入correlation_tracker()
-
+tracker = dlib.correlation_tracker()  # 導入correlation_tracker()
+##Servo連接參數
+COM_PORT = "COM4"
+BAUD_RATES = 9600
+ser = serial.Serial(COM_PORT, BAUD_RATES)
 
 def TrackerOverWindow(catchRec, imgRecHeight, imgRecWidth):
     midX = (catchRec.left() + catchRec.right()) / 2
@@ -21,19 +25,38 @@ def TrackerOverWindow(catchRec, imgRecHeight, imgRecWidth):
         return False
 
     return True
-
+    
+def RotateServo(catchRecPixel1, catchRecPixel2, imgRec, xy, angle):
+    catchRecCenter = (catchRecPixel1 + catchRecPixel2) // 2
+    imgRecCenter = imgRec // 2
+    ##臉部與WebCam位置的百分比
+    position = catchRecCenter * 100 // imgRec
+    if (position < 35.0):
+        if (angle < 160):
+            angle = angle + 2
+        ser.write('servo\r'.encode())
+        ser.write((xy + '\r').encode())
+        ser.write((str(angle) + '\r').encode())
+    elif (position > 65.0):
+        if (angle > 20):
+            angle = angle - 2
+        ser.write('servo\r'.encode())
+        ser.write((xy + '\r').encode())
+        ser.write((str(angle) + '\r').encode())
+    return angle
+ 
 
 if __name__ == '__main__':
     # 樣本描述子們
     descriptors = face.GetSampleDescriptors()
-
     MasterExist = False
     IsSampleReady = False
 
     # 選擇預設攝影機
     cap = cv2.VideoCapture(0)
-
     cv2.namedWindow("show", cv2.WINDOW_AUTOSIZE)
+    servoAngleX = 90
+    servoAngleY = 90
 
     while(cap.isOpened()):
         ret, img = cap.read()
@@ -58,7 +81,8 @@ if __name__ == '__main__':
                 tracker.update(img)
                 catch = tracker.get_position()
                 MasterExist = TrackerOverWindow(catch, img.shape[0], img.shape[1])
-
+                servoAngleX = RotateServo(catch.left(), catch.right(), img.shape[1], "X", servoAngleX)
+                servoAngleY = RotateServo(catch.top(), catch.bottom(), img.shape[0], "Y", servoAngleY)
             if catch is not None:
                 cv2.rectangle(img, (int(catch.left()), int(catch.top())), (int(
                     catch.right()), int(catch.bottom())), (0, 0, 255), 4, cv2.LINE_AA)
