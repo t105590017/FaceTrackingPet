@@ -20,12 +20,17 @@ detector = dlib.get_frontal_face_detector()     # 載入正臉檢測器 Dlib 的
 ser = None
 servoAngleX = 90
 servoAngleY = 90
+#Servo停止允許的範圍 (50+-Interval)%
+servoXInterval = 5
+servoYInterval = 12
+#Servo最大角度
+MAX_ANGLE = 160
+MIN_ANGLE = 20
 
 def HardwareInterface(x, y):
-    global servoAngleX, servoAngleY
-    print('Hardware => x :', x, '% y :', y, '%')
-    servoAngleX = RotateServo(x, 'X', servoAngleX)
-    servoAngleY = RotateServo(y,'Y',servoAngleY)
+    global servoAngleX, servoAngleY, servoXInterval, servoYInterval
+    servoAngleX = RotateServo(x, 'X', servoAngleX, servoXInterval)
+    servoAngleY = RotateServo(y,'Y',servoAngleY, servoYInterval)
 
 
 def handle_error(e):
@@ -43,19 +48,19 @@ def TrackerOverWindow(catchRec, imgRecHeight, imgRecWidth):
 
     return True
     
-def RotateServo(position, xy, angle):
-    global ser
-    if (position < 40.0):
-        if (angle < 160):
+def RotateServo(position, xy, angle, interval):
+    global ser, MAX_ANGLE, MIN_ANGLE
+    if (position < 50 - interval):
+        if (angle < MAX_ANGLE):
             angle = angle - 1
-        ser.write('servo\r'.encode())
-        ser.write((xy + '\r').encode())
+        ser.write('S'.encode())
+        ser.write(xy.encode())
         ser.write((str(angle) + '\r').encode())
-    elif (position > 60.0):
-        if (angle > 20):
+    elif (position > 50 + interval):
+        if (angle > MIN_ANGLE):
             angle = angle + 1
-        ser.write('servo\r'.encode())
-        ser.write((xy + '\r').encode())
+        ser.write('S'.encode())
+        ser.write(xy.encode())
         ser.write((str(angle) + '\r').encode())
     return angle
  
@@ -72,7 +77,7 @@ if __name__ == '__main__':
     COM_PORT = str(config.get('Arduino','COM_PORT'))
     BAUD_RATES = int(config.get('Arduino', 'BAUD_RATES'))
     TIME_OUT = float(config.get('Arduino', 'TIME_OUT'))
-    ser = serial.Serial(COM_PORT, BAUD_RATES, timeout = TIME_OUT)
+    ser = serial.Serial(port = COM_PORT, baudrate = BAUD_RATES, timeout = TIME_OUT)
     # region 變數
     # 樣本描述子們
     descriptors = face.GetSampleDescriptors()
