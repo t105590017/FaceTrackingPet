@@ -8,6 +8,7 @@ import os
 import multiprocessing
 from multiprocessing import Pool
 import traceback
+import serial
 
 config = configparser.ConfigParser()
 config.read('Config.ini')
@@ -15,6 +16,12 @@ config.read('Config.ini')
 tracker = dlib.correlation_tracker()            # 導入correlation_tracker()
 detector = dlib.get_frontal_face_detector()     # 載入正臉檢測器 Dlib 的人臉偵測器
 
+##Servo連接參數
+COM_PORT = "COM4"
+BAUD_RATES = 9600
+ser = serial.Serial(COM_PORT, BAUD_RATES)
+servoAngleX = 90
+servoAngleY = 90
 
 def HardwareInterface(x, y):
     print("Hardware => x :", x, "% y :", y, "%")
@@ -34,7 +41,26 @@ def TrackerOverWindow(catchRec, imgRecHeight, imgRecWidth):
         return False
 
     return True
-
+    
+def RotateServo(catchRecPixel1, catchRecPixel2, imgRec, xy, angle):
+    catchRecCenter = (catchRecPixel1 + catchRecPixel2) // 2
+    imgRecCenter = imgRec // 2
+    ##臉部與WebCam位置的百分比
+    position = catchRecCenter * 100 // imgRec
+    if (position < 35.0):
+        if (angle < 160):
+            angle = angle + 2
+        ser.write('servo\r'.encode())
+        ser.write((xy + '\r').encode())
+        ser.write((str(angle) + '\r').encode())
+    elif (position > 65.0):
+        if (angle > 20):
+            angle = angle - 2
+        ser.write('servo\r'.encode())
+        ser.write((xy + '\r').encode())
+        ser.write((str(angle) + '\r').encode())
+    return angle
+ 
 
 def TrackerAreaExistFace(q, img):
     global detector
@@ -49,7 +75,6 @@ if __name__ == '__main__':
     # region 變數
     # 樣本描述子們
     descriptors = face.GetSampleDescriptors()
-
     MasterExist = False
     IsSampleReady = False
 
@@ -63,7 +88,6 @@ if __name__ == '__main__':
 
     # 選擇預設攝影機
     cap = cv2.VideoCapture(0)
-
     cv2.namedWindow("show", cv2.WINDOW_AUTOSIZE)
 
     q = multiprocessing.Manager().Queue()
