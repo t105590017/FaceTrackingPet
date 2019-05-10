@@ -10,7 +10,8 @@ String servoAngle;
 void setup() {
   CamServoX.attach(3);
   CamServoY.attach(4);
-  Serial.begin(9600);
+  Serial.begin(115200);
+  //Serial.setTimeout(50);
   CamServoX.write(ServoAngleInitialize);
   CamServoY.write(ServoAngleInitialize);
 }

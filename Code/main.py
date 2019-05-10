@@ -17,18 +17,19 @@ tracker = dlib.correlation_tracker()            # 導入correlation_tracker()
 detector = dlib.get_frontal_face_detector()     # 載入正臉檢測器 Dlib 的人臉偵測器
 
 ##Servo連接參數
-COM_PORT = "COM4"
-BAUD_RATES = 9600
-ser = serial.Serial(COM_PORT, BAUD_RATES)
+ser = None
 servoAngleX = 90
 servoAngleY = 90
 
 def HardwareInterface(x, y):
-    print("Hardware => x :", x, "% y :", y, "%")
+    global servoAngleX, servoAngleY
+    print('Hardware => x :', x, '% y :', y, '%')
+    servoAngleX = RotateServo(x, 'X', servoAngleX)
+    servoAngleY = RotateServo(y,'Y',servoAngleY)
 
 
 def handle_error(e):
-    '''處理 child process 的錯誤，不然 code 寫錯時，不會回報任何錯誤'''
+    #處理 child process 的錯誤，不然 code 寫錯時，不會回報任何錯誤
     traceback.print_exception(type(e), e, e.__traceback__)
 
 
@@ -42,20 +43,17 @@ def TrackerOverWindow(catchRec, imgRecHeight, imgRecWidth):
 
     return True
     
-def RotateServo(catchRecPixel1, catchRecPixel2, imgRec, xy, angle):
-    catchRecCenter = (catchRecPixel1 + catchRecPixel2) // 2
-    imgRecCenter = imgRec // 2
-    ##臉部與WebCam位置的百分比
-    position = catchRecCenter * 100 // imgRec
-    if (position < 35.0):
+def RotateServo(position, xy, angle):
+    global ser
+    if (position < 40.0):
         if (angle < 160):
-            angle = angle + 2
+            angle = angle - 1
         ser.write('servo\r'.encode())
         ser.write((xy + '\r').encode())
         ser.write((str(angle) + '\r').encode())
-    elif (position > 65.0):
+    elif (position > 60.0):
         if (angle > 20):
-            angle = angle - 2
+            angle = angle + 1
         ser.write('servo\r'.encode())
         ser.write((xy + '\r').encode())
         ser.write((str(angle) + '\r').encode())
@@ -71,7 +69,10 @@ def TrackerAreaExistFace(q, img):
 
 
 if __name__ == '__main__':
-
+    COM_PORT = str(config.get('Arduino','COM_PORT'))
+    BAUD_RATES = int(config.get('Arduino', 'BAUD_RATES'))
+    TIME_OUT = float(config.get('Arduino', 'TIME_OUT'))
+    ser = serial.Serial(COM_PORT, BAUD_RATES, timeout = TIME_OUT)
     # region 變數
     # 樣本描述子們
     descriptors = face.GetSampleDescriptors()
@@ -88,7 +89,7 @@ if __name__ == '__main__':
 
     # 選擇預設攝影機
     cap = cv2.VideoCapture(0)
-    cv2.namedWindow("show", cv2.WINDOW_AUTOSIZE)
+    cv2.namedWindow('show', cv2.WINDOW_AUTOSIZE)
 
     q = multiprocessing.Manager().Queue()
     multiprocessing.freeze_support()
@@ -133,7 +134,7 @@ if __name__ == '__main__':
             # endregion
 
             # region check catch area
-            if bool(config.get('Enable', 'MultiProcessing')):
+            if str(config.get('Enable', 'MultiProcessing')) == 'True':
                 if catch is not None:
                     p.apply_async(TrackerAreaExistFace,
                                   args=(q, img[int(catch.top()):int(catch.bottom()),
@@ -159,7 +160,7 @@ if __name__ == '__main__':
             if catch is not None:
                 catchX = (int(catch.left()) + int(catch.right())) / 2
                 catchY = (int(catch.top()) + int(catch.bottom())) / 2
-                HardwareInterface(catchX * 100 / imgW, catchY * 100 / imgH)
+                HardwareInterface(catchX * 100 // imgW, catchY * 100 // imgH)
             else:
                 HardwareInterface(50, 50)
 
