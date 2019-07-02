@@ -2,11 +2,12 @@ import configparser
 from colorama import Fore
 from configparser import ConfigParser
 import pexpect
+import time
 
 gpioInfo = ConfigParser()
 gpioInfo.read("gpioConfig.ini")
 
-AutoTerminalEnable = False
+AutoTerminalEnable = True
 
 def AutoTerminalGetPermisssion():
     if not AutoTerminalEnable:
@@ -117,8 +118,8 @@ class PwmGPIO:
         self._period = -1
 
     def __del__(self):
-        # for gpio in self.usingList:
-        #     pass
+        for gpio in self.usingList:
+            self.Enable(gpio, False)
         self.UnExport("ALL")
 
     def Export(self, pinNumber):
@@ -137,31 +138,34 @@ class PwmGPIO:
         self.usingList.append(pinNumber.upper())
 
     def UnExport(self, pinNumber = "ALL"):
-        # if pinNumber == "ALL":
-        #     child = AutoTerminalGetPermisssion()
-        #     for gpio in self.usingList:
-        #         AutoTerminal("echo " + self._gpioMap[gpio] + " > " + self._controlPath + "/unexport", child)
-        #         print("{0}[SUCCESS]{1} pin number {2} unexport".format(Fore.GREEN, Fore.RESET, pinNumber))
+        if pinNumber == "ALL":
+            child = AutoTerminalGetPermisssion()
+            for gpio in self.usingList:
+                AutoTerminal("echo " + self._gpioMap[gpio] + " > " + self._controlPath + "/unexport", child)
+                print("{0}[SUCCESS]{1} pin number {2} unexport".format(Fore.GREEN, Fore.RESET, pinNumber))
             
-        #     self.usingList.clear()
-        #     AutoTerminalClose(child)         
-        #     return True
+            self.usingList.clear()
+            AutoTerminalClose(child)         
+            return True
 
-        # if pinNumber.upper() not in self.usingList:
-        #     print("{0}[ERROR]{1} pin number {2} can't be unexport !!".format(Fore.RED, Fore.RESET, pinNumber))
-        #     return False
+        if pinNumber.upper() not in self.usingList:
+            print("{0}[ERROR]{1} pin number {2} can't be unexport !!".format(Fore.RED, Fore.RESET, pinNumber))
+            return False
 
-        # child = AutoTerminalGetPermisssion()
-        # AutoTerminal("echo " + self._gpioMap[pinNumber] + " > " + self._controlPath + "/unexport", child)
-        # AutoTerminalClose(child)
-        # print(Fore.GREEN + "[SUCCESS]" + Fore.RESET + " pin number "+ pinNumber + " unexport")
-        # self.usingList.remove(pinNumber.upper())
-        # return True
-        pass
+        child = AutoTerminalGetPermisssion()
+        AutoTerminal("echo 0 > " + self._controlPath + "/" + self._gpioMap[pinNumber] + "/unexport", child)
+        AutoTerminalClose(child)
+        print(Fore.GREEN + "[SUCCESS]" + Fore.RESET + " pin number "+ pinNumber + " unexport")
+        self.usingList.remove(pinNumber.upper())
+        return True
 
     def Period(self, pinNumber, period):
         if pinNumber.upper() not in self.usingList:
             print("{0}[ERROR]{1} pin number {2} is not export !!".format(Fore.RED, Fore.RESET, pinNumber))
+            return False
+        
+        if period < 0:
+            print("{0}[ERROR]{1} pin number {2} must > 1 !!".format(Fore.RED, Fore.RESET, pinNumber))
             return False
 
         child = AutoTerminalGetPermisssion()
@@ -176,14 +180,14 @@ class PwmGPIO:
             print("{0}[ERROR]{1} pin number {2} is not export !!".format(Fore.RED, Fore.RESET, pinNumber))
             return False
 
-        if self._period is -1:
-            print("{0}[ERROR]{1} pin number {2} need set period first !!".format(Fore.RED, Fore.RESET, pinNumber))
+        if dutyCycle > self._period:
+            print("{0}[ERROR]{1} pin number {2} period must larger than dutyCycle !!".format(Fore.RED, Fore.RESET, pinNumber))
             return False
 
         child = AutoTerminalGetPermisssion()
-        AutoTerminal("echo " + str(int(self._period * dutyCycle)) + " > " + self._controlPath + "/" + self._gpioMap[pinNumber] + "/pwm0/duty_cycle", child)      
+        AutoTerminal("echo " + str(int(dutyCycle)) + " > " + self._controlPath + "/" + self._gpioMap[pinNumber] + "/pwm0/duty_cycle", child)      
         AutoTerminalClose(child)
-        print("{0}[SUCCESS]{1} pin number {2} set dutyCycle to {3}".format(Fore.GREEN, Fore.RESET, pinNumber, int(self._period * dutyCycle)))
+        print("{0}[SUCCESS]{1} pin number {2} set dutyCycle to {3}".format(Fore.GREEN, Fore.RESET, pinNumber, int(dutyCycle)))
         return True
 
     def Enable(self, pinNumber, enable = True):
@@ -197,12 +201,41 @@ class PwmGPIO:
         print("{0}[SUCCESS]{1} pin number {2} set enable to {3}".format(Fore.GREEN, Fore.RESET, pinNumber, 1 if enable else 0))
         return True
 
+class Servomotor:
+    def __init__(self, servoModel, pin, resetAngle = None, initAngle = 0):
+        self._pin = pin
+        self._resetAngle = resetAngle
+        self._minDutyCycle = gpioInfo.getint(servoModel, "MinDutyCycle")
+        self._maxDutyCycle = gpioInfo.getint(servoModel, "MaxDutyCycle")
+        self._maxAngle = gpioInfo.getint(servoModel, "MaxAngle")
+        self._pwmGPIO = PwmGPIO()
+        self._pwmGPIO.Export(pin)
+        self._pwmGPIO.Period(pin, 3413333)
+        self._pwmGPIO.Enable(pin, True)
+    
+    def __del__(self):
+        if self._resetAngle is not None:
+            self.ChangAngle(self._resetAngle)
+        
+        self._pwmGPIO.Enable(self._pin, False)
+        self._pwmGPIO.UnExport(self._pin)
 
+    def ChangAngle(self, angle):
+        angle = angle % 360
+
+        if angle > self._maxAngle:
+            print("{0}[ERROR]{1} the angle is too large !!".format(Fore.RED, Fore.RESET))
+            return False
+
+        dutyCycle = (self._maxDutyCycle - self._minDutyCycle) * angle / self._maxAngle + self._minDutyCycle
+
+        self._pwmGPIO.DutyCycle(self._pin, dutyCycle)
+        print(Fore.GREEN + "[SUCCESS]" + Fore.RESET + " Servomotor change angle to " + str(angle) +" in pin number "+ self._pin)
+        return True
 
 
 if __name__ == "__main__":
-    import time
-
+    ##NormalGPIO
     # n = NormalGPIO()
 
     # n.Export("1d3")
@@ -223,17 +256,51 @@ if __name__ == "__main__":
 
     # time.sleep(2)
 
-    p = PwmGPIO()
+    # print(n.usingList)
 
-    p.Export("dsa")
-    p.Export("PIN33")
-    p.Export("pin33")
+    ##PwmGPIO
+    # p = PwmGPIO()
 
-    p.DutyCycle("pin33", 0.5)
-    p.Period("pin33", 3413333)
-    p.DutyCycle("pin33", 0.5)
+    # p.Export("pin32")
+    # p.Enable("pin32")
 
-    p.Enable("pin33", True)
-    p.Enable("pin26", True)
+    # p.Period("pin32", 3413333)
 
-    print(p.usingList)
+    # p.DutyCycle("pin32", 1450000)
+    # time.sleep(2)
+
+    # p.DutyCycle("pin32", 1925000)
+    # time.sleep(2)
+
+    # p.DutyCycle("pin32", 975000)
+    # time.sleep(2)
+
+    # p.DutyCycle("pin32", 2400000)
+    # time.sleep(2)
+
+    # p.DutyCycle("pin32", 500000)
+    # time.sleep(2)
+
+    # p.UnExport("pin32")
+
+    ## Servomotor
+    s1 = Servomotor("SG90", "PIN32", resetAngle = 0)
+    s2 = Servomotor("SG90", "PIN33", resetAngle = 0)
+
+    s1.ChangAngle(90)
+    time.sleep(2)
+
+    s2.ChangAngle(45)
+    time.sleep(2)
+
+    s1.ChangAngle(135)
+    time.sleep(2)
+
+    s2.ChangAngle(180)
+    time.sleep(2)
+
+    s1.ChangAngle(0)
+    time.sleep(2)
+
+    s2.ChangAngle(135)
+    time.sleep(2)
