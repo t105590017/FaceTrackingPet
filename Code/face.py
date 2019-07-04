@@ -14,10 +14,10 @@ config.read('Config.ini')
 detector = dlib.get_frontal_face_detector()
 # 載入人臉關鍵點檢測器
 predictor = dlib.shape_predictor(
-    "Bat\\shape_predictor_68_face_landmarks.dat")
+    "Bat/shape_predictor_68_face_landmarks.dat")
 # 載入人臉識別模型
 facerec = dlib.face_recognition_model_v1(
-    "Bat\\dlib_face_recognition_resnet_model_v1.dat")
+    "Bat/dlib_face_recognition_resnet_model_v1.dat")
 
 
 def CheckSampleWithCam(imgTarget, descriptors):
@@ -58,7 +58,8 @@ def ScanningMaster(img):
     # 偵測人臉
     face_rects = detector(img, 0)
     if(len(face_rects) != 1):
-        print('Can\'n catch face')
+        if(config.getboolean("TerminalMessage", "CatchFaceExist")):
+            print('Can\'n catch face')
         return False
 
     faceImg = img[face_rects[0].top(): face_rects[0].bottom(),
@@ -67,7 +68,7 @@ def ScanningMaster(img):
 
     print(imageVar)
     if(int(imageVar) > catchFileCountLimit and len(Get68FaceFromImg(faceImg)) != 0):
-        cv2.imwrite(MasterSamplePath + '\\MasterSample' +
+        cv2.imwrite(MasterSamplePath + '/MasterSample' +
                     str(catchFileCount + 1) + '.jpg',
                     faceImg)
 
@@ -83,8 +84,6 @@ def getImageVar(image):
     return imageVar
 
 # 取得樣本描述子們
-
-
 def GetSampleDescriptors():
     # 樣本目錄
     faces_folder_path = str(config.get('MasterSample', 'Path'))
@@ -135,8 +134,6 @@ def Get68FaceFromImg(img):
     return descriptors
 
 # 在臉上顯示方塊
-
-
 def PrintRectangleFaceWithdDetector(img, face_rects=[], rgb=(0, 255, 0)):
 
     for d in face_rects:
