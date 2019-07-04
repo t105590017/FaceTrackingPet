@@ -35,19 +35,21 @@ def AutoTerminalClose(child = None):
         return
     child.expect("#")
     child.close(force = False)
-    # return None
+    return None
 
 class NormalGPIO:
     def __init__(self):
         self.usingList = []
         self._controlPath = "/sys/class/gpio"
         self._gpioMap = gpioInfo["NumberOfNormalGPIO"]
+        self._child = AutoTerminalGetPermisssion()
 
     def __del__(self):
         for gpio in self.usingList:
             self.Value(gpio, "0")
             self.Direction(gpio, "in")
         self.UnExport("ALL")
+        AutoTerminalClose(self._child)
 
     def Export(self, pinNumber, direction = "out"):
         if pinNumber not in self._gpioMap:
@@ -58,32 +60,32 @@ class NormalGPIO:
             print("{0}[ERROR]{1} pin number {2} has be used !!".format(Fore.RED, Fore.RESET, pinNumber))
             return False
 
-        child = AutoTerminalGetPermisssion()
-        AutoTerminal("echo " + self._gpioMap[pinNumber] + " > " + self._controlPath + "/export", child)
-        AutoTerminal("echo " + direction + " > " + self._controlPath + "/gpio" + self._gpioMap[pinNumber] + "/direction", child)        
-        AutoTerminalClose(child)
+        
+        AutoTerminal("echo " + self._gpioMap[pinNumber] + " > " + self._controlPath + "/export", self._child)
+        AutoTerminal("echo " + direction + " > " + self._controlPath + "/gpio" + self._gpioMap[pinNumber] + "/direction", self._child)        
+        
         print("{0}[SUCCESS]{1} pin number {2} export".format(Fore.GREEN, Fore.RESET, pinNumber))
         self.usingList.append(pinNumber.upper())
         return True
 
     def UnExport(self, pinNumber = "ALL"):
         if pinNumber == "ALL":
-            child = AutoTerminalGetPermisssion()
+            
             for gpio in self.usingList:
-                AutoTerminal("echo " + self._gpioMap[gpio] + " > " + self._controlPath + "/unexport", child)
+                AutoTerminal("echo " + self._gpioMap[gpio] + " > " + self._controlPath + "/unexport", self._child)
                 print("{0}[SUCCESS]{1} pin number {2} unexport".format(Fore.GREEN, Fore.RESET, pinNumber))
             
             self.usingList.clear()
-            AutoTerminalClose(child)         
+                     
             return True
 
         if pinNumber.upper() not in self.usingList:
             print("{0}[ERROR]{1} pin number {2} can't be unexport !!".format(Fore.RED, Fore.RESET, pinNumber))
             return False
 
-        child = AutoTerminalGetPermisssion()
-        AutoTerminal("echo " + self._gpioMap[pinNumber] + " > " + self._controlPath + "/unexport", child)
-        AutoTerminalClose(child)
+        
+        AutoTerminal("echo " + self._gpioMap[pinNumber] + " > " + self._controlPath + "/unexport", self._child)
+        
         print(Fore.GREEN + "[SUCCESS]" + Fore.RESET + " pin number "+ pinNumber + " unexport")
         self.usingList.remove(pinNumber.upper())
         return True
@@ -93,9 +95,9 @@ class NormalGPIO:
             print("{0}[ERROR]{1} pin number {2} is not export !!".format(Fore.RED, Fore.RESET, pinNumber))
             return False
 
-        child = AutoTerminalGetPermisssion()
-        AutoTerminal("echo " + value + " > " + self._controlPath + "/gpio" + self._gpioMap[pinNumber] + "/value", child)
-        AutoTerminalClose(child)
+        
+        AutoTerminal("echo " + value + " > " + self._controlPath + "/gpio" + self._gpioMap[pinNumber] + "/value", self._child)
+        
         print("{0}[SUCCESS]{1} pin number {2} set value to {3}".format(Fore.GREEN, Fore.RESET, pinNumber, value))
         return True
 
@@ -104,9 +106,9 @@ class NormalGPIO:
             print("{0}[ERROR]{1} pin number {2} is not export !!".format(Fore.RED, Fore.RESET, pinNumber))
             return False
 
-        child = AutoTerminalGetPermisssion()
-        AutoTerminal("echo " + direction + " > " + self._controlPath + "/gpio" + self._gpioMap[pinNumber] + "/direction", child)
-        AutoTerminalClose(child)
+        
+        AutoTerminal("echo " + direction + " > " + self._controlPath + "/gpio" + self._gpioMap[pinNumber] + "/direction", self._child)
+        
         print("{0}[SUCCESS]{1} pin number {2} set direction to {3}".format(Fore.GREEN, Fore.RESET, pinNumber, direction))
         return True
         
@@ -116,11 +118,13 @@ class PwmGPIO:
         self._controlPath = "/sys/class/pwm"
         self._gpioMap = gpioInfo["NumberOfPwmGPIO"]
         self._period = -1
+        self._child = AutoTerminalGetPermisssion()
 
     def __del__(self):
         for gpio in self.usingList:
             self.Enable(gpio, False)
         self.UnExport("ALL")
+        AutoTerminalClose(self._child)
 
     def Export(self, pinNumber):
         if pinNumber not in self._gpioMap:
@@ -131,30 +135,30 @@ class PwmGPIO:
             print("{0}[ERROR]{1} pin number {2} has be used !!".format(Fore.RED, Fore.RESET, pinNumber))
             return False
 
-        child = AutoTerminalGetPermisssion()
-        AutoTerminal("echo 0 > " + self._controlPath + "/" + self._gpioMap[pinNumber] + "/export", child)      
-        AutoTerminalClose(child)
+        
+        AutoTerminal("echo 0 > " + self._controlPath + "/" + self._gpioMap[pinNumber] + "/export", self._child)      
+        
         print("{0}[SUCCESS]{1} pin number {2} export".format(Fore.GREEN, Fore.RESET, pinNumber))
         self.usingList.append(pinNumber.upper())
 
     def UnExport(self, pinNumber = "ALL"):
         if pinNumber == "ALL":
-            child = AutoTerminalGetPermisssion()
+            
             for gpio in self.usingList:
-                AutoTerminal("echo " + self._gpioMap[gpio] + " > " + self._controlPath + "/unexport", child)
+                AutoTerminal("echo " + self._gpioMap[gpio] + " > " + self._controlPath + "/unexport", self._child)
                 print("{0}[SUCCESS]{1} pin number {2} unexport".format(Fore.GREEN, Fore.RESET, pinNumber))
             
             self.usingList.clear()
-            AutoTerminalClose(child)         
+                     
             return True
 
         if pinNumber.upper() not in self.usingList:
             print("{0}[ERROR]{1} pin number {2} can't be unexport !!".format(Fore.RED, Fore.RESET, pinNumber))
             return False
 
-        child = AutoTerminalGetPermisssion()
-        AutoTerminal("echo 0 > " + self._controlPath + "/" + self._gpioMap[pinNumber] + "/unexport", child)
-        AutoTerminalClose(child)
+        
+        AutoTerminal("echo 0 > " + self._controlPath + "/" + self._gpioMap[pinNumber] + "/unexport", self._child)
+        
         print(Fore.GREEN + "[SUCCESS]" + Fore.RESET + " pin number "+ pinNumber + " unexport")
         self.usingList.remove(pinNumber.upper())
         return True
@@ -168,9 +172,9 @@ class PwmGPIO:
             print("{0}[ERROR]{1} pin number {2} must > 1 !!".format(Fore.RED, Fore.RESET, pinNumber))
             return False
 
-        child = AutoTerminalGetPermisssion()
-        AutoTerminal("echo " + str(period) + " > " + self._controlPath + "/" + self._gpioMap[pinNumber] + "/pwm0/period", child)      
-        AutoTerminalClose(child)
+        
+        AutoTerminal("echo " + str(period) + " > " + self._controlPath + "/" + self._gpioMap[pinNumber] + "/pwm0/period", self._child)      
+        
         self._period = period
         print("{0}[SUCCESS]{1} pin number {2} set period to {3}".format(Fore.GREEN, Fore.RESET, pinNumber, period))
         return True
@@ -184,9 +188,9 @@ class PwmGPIO:
             print("{0}[ERROR]{1} pin number {2} period must larger than dutyCycle !!".format(Fore.RED, Fore.RESET, pinNumber))
             return False
 
-        child = AutoTerminalGetPermisssion()
-        AutoTerminal("echo " + str(int(dutyCycle)) + " > " + self._controlPath + "/" + self._gpioMap[pinNumber] + "/pwm0/duty_cycle", child)      
-        AutoTerminalClose(child)
+        
+        AutoTerminal("echo " + str(int(dutyCycle)) + " > " + self._controlPath + "/" + self._gpioMap[pinNumber] + "/pwm0/duty_cycle", self._child)      
+        
         print("{0}[SUCCESS]{1} pin number {2} set dutyCycle to {3}".format(Fore.GREEN, Fore.RESET, pinNumber, int(dutyCycle)))
         return True
 
@@ -195,9 +199,9 @@ class PwmGPIO:
             print("{0}[ERROR]{1} pin number {2} is not export !!".format(Fore.RED, Fore.RESET, pinNumber))
             return False
 
-        child = AutoTerminalGetPermisssion()
-        AutoTerminal("echo " + str(1 if enable else 0) + " > " + self._controlPath + "/" + self._gpioMap[pinNumber] + "/pwm0/enable", child)      
-        AutoTerminalClose(child)
+        
+        AutoTerminal("echo " + str(1 if enable else 0) + " > " + self._controlPath + "/" + self._gpioMap[pinNumber] + "/pwm0/enable", self._child)      
+        
         print("{0}[SUCCESS]{1} pin number {2} set enable to {3}".format(Fore.GREEN, Fore.RESET, pinNumber, 1 if enable else 0))
         return True
 
@@ -215,12 +219,12 @@ class Servomotor:
     
     def __del__(self):
         if self._resetAngle is not None:
-            self.ChangAngle(self._resetAngle)
+            self.ChangeAngle(self._resetAngle)
         
         self._pwmGPIO.Enable(self._pin, False)
         self._pwmGPIO.UnExport(self._pin)
 
-    def ChangAngle(self, angle):
+    def ChangeAngle(self, angle):
         angle = angle % 360
 
         if angle > self._maxAngle:
@@ -235,7 +239,7 @@ class Servomotor:
 
 
 if __name__ == "__main__":
-    ##NormalGPIO
+    #region NormalGPIO
     # n = NormalGPIO()
 
     # n.Export("1d3")
@@ -257,8 +261,9 @@ if __name__ == "__main__":
     # time.sleep(2)
 
     # print(n.usingList)
+    #endregion
 
-    ##PwmGPIO
+    #region PwmGPIO
     # p = PwmGPIO()
 
     # p.Export("pin32")
@@ -282,25 +287,34 @@ if __name__ == "__main__":
     # time.sleep(2)
 
     # p.UnExport("pin32")
+    #endregion
+    
+    #region Servomotor
+    s1 = Servomotor("SG90", "PIN32", resetAngle = 90, initAngle= 90)
+    s2 = Servomotor("SG90", "PIN33", resetAngle = 90, initAngle= 90)
 
-    ## Servomotor
-    s1 = Servomotor("SG90", "PIN32", resetAngle = 0)
-    s2 = Servomotor("SG90", "PIN33", resetAngle = 0)
+    # s1.ChangeAngle(90)
+    # # time.sleep(2)
 
-    s1.ChangAngle(90)
-    time.sleep(2)
+    # s2.ChangeAngle(45)
+    # # time.sleep(2)
 
-    s2.ChangAngle(45)
-    time.sleep(2)
+    # s1.ChangeAngle(135)
+    # # time.sleep(2)
 
-    s1.ChangAngle(135)
-    time.sleep(2)
+    # s2.ChangeAngle(180)
+    # # time.sleep(2)
 
-    s2.ChangAngle(180)
-    time.sleep(2)
+    # s1.ChangeAngle(0)
+    # # time.sleep(2)
 
-    s1.ChangAngle(0)
-    time.sleep(2)
+    # s2.ChangeAngle(135)
+    # # time.sleep(2)
 
-    s2.ChangAngle(135)
-    time.sleep(2)
+
+    for i in range(0, 180):
+        if(i%2 == 0):
+            s1.ChangeAngle(180)
+        else:
+            s1.ChangeAngle(0)
+    #endregion
