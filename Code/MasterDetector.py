@@ -73,7 +73,7 @@ def ScanningMaster(img):
         # 偵測人臉
         face_rects = detector(img, 0)
         if(len(face_rects) != 1):
-            if(config.getboolean("TerminalMessage", "CatchFaceExist")):
+            if(config.getboolean("ShowControl", "TerminalMessage_CatchFaceExist")):
                 print("Can\"n catch face")
             return False
 
@@ -230,8 +230,10 @@ class MasterDetector:
                 print("get face : False")
                 return False
 
-    def ChangeStatus(self, status):
-        self._status = status
+    def Status(self, status = None):
+        if status is not None:
+            self._status = status
+        return self._status
 
     def RunCatchMaster(self, img):
         if self._status is MasterDetectorState.SAMPLE_NO_READY:
