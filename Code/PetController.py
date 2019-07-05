@@ -62,11 +62,11 @@ class PetController(PetAction):
                                     (int(catch.right()), int(catch.bottom())),
                                     (0, 0, 255), 4, cv2.LINE_AA)
 
-                cv2.putText(img, imgText, (0, 30), cv2.FONT_HERSHEY_DUPLEX,
-                            0.7, (255, 0, 0), 1, cv2.LINE_AA)
                 if (config.getboolean("ShowControl", "CameraImgToWindow")):
+                    cv2.putText(img, imgText, (0, 30), cv2.FONT_HERSHEY_DUPLEX,
+                                0.7, (255, 0, 0), 1, cv2.LINE_AA)
                     cv2.imshow(config.get("ShowControl", "CameraImgToWindow_WindowName"), img)
-                    
+
                 # endregion
 
                 # region Hardware
