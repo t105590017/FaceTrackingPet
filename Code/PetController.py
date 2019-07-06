@@ -4,19 +4,26 @@ import os
 import glob
 import multiprocessing
 from multiprocessing import Pool
-from MasterDetector import MasterDetector, MasterDetectorState
+# from MasterDetector import MasterDetector, MasterDetectorState
 
 config = configparser.ConfigParser()
 config.read("Config.ini")
 
 class PetAction:
     def __init__(self):
+        self._shareValue = None
         pass
 
     def __del__(self):
         pass
 
+    def InitalShareValue(self):
+        raise RuntimeError()
+
     def Run(self):
+        raise RuntimeError()
+
+    def KeyDown(self):
         raise RuntimeError()
 
 class PetController(PetAction):
@@ -27,7 +34,14 @@ class PetController(PetAction):
         self._cap = cv2.VideoCapture(CAMERA_INDEX)
         if (config.getboolean("ShowControl", "CameraImgToWindow")):
             cv2.namedWindow(config.get("ShowControl", "CameraImgToWindow_WindowName"), cv2.WINDOW_AUTOSIZE)
-        self._queue = multiprocessing.Manager().Queue()
+        self._shareValue = ShareValue()
+        self._shareValue._img = None
+        self._shareValue._stauus = None
+        self._shareValue._catch = None
+        self._shareValue._imgText = ""
+        self._shareValue._keyDown = ""
+        self._shareValue._pool = None
+        self._shareValue._queue = multiprocessing.Manager().Queue()
         multiprocessing.freeze_support()
         self._actionList = []
         pass
@@ -35,37 +49,39 @@ class PetController(PetAction):
     def __del__(self):
         pass
 
-    def AddNowAction(self, action):
+    def AddNewAction(self, action):
+        action._shareValue = self._shareValue
+        # action.InitalShareValue()
         self._actionList.append(action)
 
     def Run(self):
         cpus = multiprocessing.cpu_count()
-        with Pool(processes=cpus) as p:
-            cm = MasterDetector(p, self._queue)
+        with Pool(processes=cpus) as self._shareValue._pool:
+            for actInitalShareValue in self._actionList:
+                actInitalShareValue.InitalShareValue()
             while(self._cap.isOpened()):
                 # region cap read
-                ret, img = self._cap.read()
+                ret, self._shareValue._img = self._cap.read()
                 if(not ret):
                     break
                 # endregion
 
-                # region catch
-                st = cm.RunCatchMaster(img)
-                catch = cm.CatchArea()
-                imgText = st.value
+                # region Action Run
+                for actRun in self._actionList:
+                    actRun.Run()
                 # endregion
 
                 # region show
-                if catch is not None:
-                    cv2.rectangle(img,
-                                    (int(catch.left()), int(catch.top())),
-                                    (int(catch.right()), int(catch.bottom())),
+                if self._shareValue._catch is not None:
+                    cv2.rectangle(self._shareValue._img,
+                                    (int(self._shareValue._catch.left()), int(self._shareValue._catch.top())),
+                                    (int(self._shareValue._catch.right()), int(self._shareValue._catch.bottom())),
                                     (0, 0, 255), 4, cv2.LINE_AA)
 
                 if (config.getboolean("ShowControl", "CameraImgToWindow")):
-                    cv2.putText(img, imgText, (0, 30), cv2.FONT_HERSHEY_DUPLEX,
+                    cv2.putText(self._shareValue._img, self._shareValue._imgText, (0, 30), cv2.FONT_HERSHEY_DUPLEX,
                                 0.7, (255, 0, 0), 1, cv2.LINE_AA)
-                    cv2.imshow(config.get("ShowControl", "CameraImgToWindow_WindowName"), img)
+                    cv2.imshow(config.get("ShowControl", "CameraImgToWindow_WindowName"), self._shareValue._img)
 
                 # endregion
 
@@ -81,33 +97,23 @@ class PetController(PetAction):
 
                 # region keyCode
                 keyCode = cv2.waitKey(1)
+                self._shareValue._keyDown = keyCode & 0xFF
                 if keyCode & 0xFF == ord('q'):
-                    break
-                if keyCode & 0xFF == ord('r'):
-                    for f in glob.glob(os.path.join(config.get('MasterSample', 'Path'), "*.jpg")):
-                        print("Delete file: {}".format(f))
-                        os.remove(f)
-                    cm.Status(MasterDetectorState.SAMPLE_NO_READY)
-                if keyCode & 0xFF == ord('x'):
-                    cm.Status(MasterDetectorState.LOST)
-                # endregion
-                
-                # region else action
-                for act in self._actionList:
-                    act.Run()
+                    break  
+                for actKeyDown in self._actionList:
+                    actKeyDown.KeyDown()
                 # endregion
 
-            p.terminate()
-            p.join()
+            self._shareValue._pool.terminate()
+            self._shareValue._pool.join()
 
         # 釋放攝影機
         self._cap.release()
         cv2.destroyAllWindows()
         pass
-    
-    
-if __name__ == "__main__":
-    p = PetController()
-    p.Run()
 
+class ShareValue:
+    pass
+
+if __name__ == "__main__":
     pass

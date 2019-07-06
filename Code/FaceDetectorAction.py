@@ -10,6 +10,7 @@ from enum import Enum
 import multiprocessing
 from multiprocessing import Pool
 import traceback
+from PetController import PetAction
 
 #region 公用參數
 config = configparser.ConfigParser()
@@ -109,7 +110,6 @@ def handle_error(e):
     #處理 child process 的錯誤，不然 code 寫錯時，不會回報任何錯誤
     traceback.print_exception(type(e), e, e.__traceback__)
 #endregion
-
 
 class MasterDetectorState(Enum):
     #Samply not ready
@@ -262,6 +262,26 @@ class MasterDetector:
 
         return self._status
 
+class FaceDetectorAction(PetAction):
+    
+    def InitalShareValue(self):
+        self._cm = MasterDetector(self._shareValue._pool, self._shareValue._queue)
+
+    def Run(self):
+        self._shareValue._status = self._cm.RunCatchMaster(self._shareValue._img)
+        self._shareValue._catch = self._cm.CatchArea()
+        self._shareValue._imgText = self._shareValue._status.value
+        pass
+
+    def KeyDown(self):
+        if self._shareValue._keyDown == ord('r'):
+            for f in glob.glob(os.path.join(config.get('MasterSample', 'Path'), "*.jpg")):
+                print("Delete file: {}".format(f))
+                os.remove(f)
+            self._cm.Status(MasterDetectorState.SAMPLE_NO_READY)
+        if self._shareValue._keyDown == ord('x'):
+            self._cm.Status(MasterDetectorState.LOST)
+        pass
         
 if __name__ == "__main__":
     pass

@@ -212,6 +212,7 @@ class Servomotor:
         self._minDutyCycle = gpioInfo.getint(servoModel, "MinDutyCycle")
         self._maxDutyCycle = gpioInfo.getint(servoModel, "MaxDutyCycle")
         self._maxAngle = gpioInfo.getint(servoModel, "MaxAngle")
+        self._minAngle = gpioInfo.getint(servoModel, "MinAngle")
         self._pwmGPIO = PwmGPIO()
         self._pwmGPIO.Export(pin)
         self._pwmGPIO.Period(pin, 3413333)
@@ -229,6 +230,10 @@ class Servomotor:
 
         if angle > self._maxAngle:
             print("{0}[ERROR]{1} the angle is too large !!".format(Fore.RED, Fore.RESET))
+            return False
+
+        if angle > self._minAngle:
+            print("{0}[ERROR]{1} the angle is too small !!".format(Fore.RED, Fore.RESET))
             return False
 
         dutyCycle = (self._maxDutyCycle - self._minDutyCycle) * angle / self._maxAngle + self._minDutyCycle
