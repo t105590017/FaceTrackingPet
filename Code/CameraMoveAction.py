@@ -37,24 +37,24 @@ class CameraMoveAction(PetAction):
             
         # Horizontal
         if x > 50 and self._cameraHorizontalAngle < gpioInfo.getint("SG90", "MaxAngle"):
-            moveAngle = (gpioInfo.getint("SG90", "MaxAngle") - self._cameraHorizontalAngle) * (y - 50) // 100
+            moveAngle = int((gpioInfo.getint("SG90", "MaxAngle") - self._cameraHorizontalAngle) * (x - 50)) // 100
             self._cameraHorizontalAngle += moveAngle
             if self._cameraHorizontalAngle > gpioInfo.getint("SG90", "MaxAngle"):
                 self._cameraHorizontalAngle = gpioInfo.getint("SG90", "MaxAngle")
         if x < 50 and self._cameraHorizontalAngle > gpioInfo.getint("SG90", "MinAngle"):
-            moveAngle = self._cameraHorizontalAngle * (50 - x) // 100
+            moveAngle = int(self._cameraHorizontalAngle * (50 - x)) // 100
             self._cameraHorizontalAngle -= moveAngle
             if self._cameraHorizontalAngle < gpioInfo.getint("SG90", "MinAngle"):
                 self._cameraHorizontalAngle = gpioInfo.getint("SG90", "MinAngle")
 
         # Vertical
         if y > 50 and self._cameraVerticalAngle < gpioInfo.getint("SG90", "MaxAngle"):
-            moveAngle = (gpioInfo.getint("SG90", "MaxAngle") - self._cameraVerticalAngle) * (y - 50) // 100
+            moveAngle = int((gpioInfo.getint("SG90", "MaxAngle") - self._cameraVerticalAngle) * (y - 50)) // 100
             self._cameraVerticalAngle += moveAngle
             if self._cameraVerticalAngle > gpioInfo.getint("SG90", "MaxAngle"):
                 self._cameraVerticalAngle = gpioInfo.getint("SG90", "MaxAngle")
         if y < 50 and self._cameraVerticalAngle > gpioInfo.getint("SG90", "MinAngle"):
-            moveAngle = self._cameraVerticalAngle * (50 - y) // 100
+            moveAngle = int(self._cameraVerticalAngle * (50 - y)) // 100
             self._cameraVerticalAngle -= moveAngle
             if self._cameraVerticalAngle < gpioInfo.getint("SG90", "MinAngle"):
                 self._cameraVerticalAngle = gpioInfo.getint("SG90", "MinAngle")
