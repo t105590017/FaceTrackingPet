@@ -4,7 +4,6 @@ import os
 import glob
 import multiprocessing
 from multiprocessing import Pool
-# from MasterDetector import MasterDetector, MasterDetectorState
 
 config = configparser.ConfigParser()
 config.read("Config.ini")
@@ -85,16 +84,6 @@ class PetController(PetAction):
 
                 # endregion
 
-                # region Hardware
-                # imgH, imgW = img.shape[:2]
-                # if catch is not None:
-                #     catchX = (int(catch.left()) + int(catch.right())) / 2
-                #     catchY = (int(catch.top()) + int(catch.bottom())) / 2
-                #     HardwareInterface(catchX * 100 // imgW, catchY * 100 // imgH)
-                # else:
-                #     HardwareInterface(50, 50)
-                # endregion
-
                 # region keyCode
                 keyCode = cv2.waitKey(1)
                 self._shareValue._keyDown = keyCode & 0xFF
@@ -108,8 +97,9 @@ class PetController(PetAction):
             self._shareValue._pool.join()
 
         # 釋放攝影機
+        RuntimeError("process end")
         self._cap.release()
-        cv2.destroyAllWindows()
+        # cv2.destroyAllWindows()
         pass
 
 class ShareValue:

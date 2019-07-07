@@ -1,6 +1,7 @@
 from PetController import PetAction
+from FaceDetectorAction import MasterDetectorState
 from configparser import ConfigParser
-# from GPIOController import Servomotor
+from GPIOController import Servomotor
 
 gpioInfo = ConfigParser()
 gpioInfo.read("gpioConfig.ini")
@@ -11,11 +12,8 @@ class CameraMoveAction(PetAction):
         self._cameraVerticalAngle = 90
         self._horizontalServomotor = None
         self._verticalServomotor = None
-        servoModel = "SG90"
-        self._maxAngle = gpioInfo.getint(servoModel, "MaxAngle")
-        self._minAngle = gpioInfo.getint(servoModel, "MinAngle")
-        # self._horizontalServomotor = Servomotor(servoModel, "PIN32", resetAngle = 90, initAngle= self._cameraHorizontalAngle)
-        # self._verticalServomotor = Servomotor(servoModel, "PIN33", resetAngle = 90, initAngle= self._cameraHorizontalAngle)
+        self._horizontalServomotor = Servomotor("SG90", "PIN32", resetAngle = 90, initAngle= self._cameraHorizontalAngle)
+        self._verticalServomotor = Servomotor("SG90", "PIN33", resetAngle = 90, initAngle= self._cameraHorizontalAngle)
 
     def InitalShareValue(self):
         pass
@@ -34,21 +32,36 @@ class CameraMoveAction(PetAction):
         pass
 
     def HardwareInterface(self, x, y):
+        if self._shareValue._status is MasterDetectorState.LOST:
+            return
+            
         # Horizontal
-        if x > 50 and self._cameraHorizontalAngle < self._maxAngle:
-            self._cameraHorizontalAngle += 1
-        if x < 50 and self._cameraHorizontalAngle > self._minAngle:
-            self._cameraHorizontalAngle -= 1
+        if x > 50 and self._cameraHorizontalAngle < gpioInfo.getint("SG90", "MaxAngle"):
+            moveAngle = (gpioInfo.getint("SG90", "MaxAngle") - self._cameraHorizontalAngle) * (y - 50) // 100
+            self._cameraHorizontalAngle += moveAngle
+            if self._cameraHorizontalAngle > gpioInfo.getint("SG90", "MaxAngle"):
+                self._cameraHorizontalAngle = gpioInfo.getint("SG90", "MaxAngle")
+        if x < 50 and self._cameraHorizontalAngle > gpioInfo.getint("SG90", "MinAngle"):
+            moveAngle = self._cameraHorizontalAngle * (50 - x) // 100
+            self._cameraHorizontalAngle -= moveAngle
+            if self._cameraHorizontalAngle < gpioInfo.getint("SG90", "MinAngle"):
+                self._cameraHorizontalAngle = gpioInfo.getint("SG90", "MinAngle")
 
         # Vertical
-        if y > 50 and self._cameraVerticalAngle < self._maxAngle:
-            self._cameraVerticalAngle += 1
-        if y < 50 and self._cameraVerticalAngle > self._minAngle:
-            self._cameraVerticalAngle -= 1
+        if y > 50 and self._cameraVerticalAngle < gpioInfo.getint("SG90", "MaxAngle"):
+            moveAngle = (gpioInfo.getint("SG90", "MaxAngle") - self._cameraVerticalAngle) * (y - 50) // 100
+            self._cameraVerticalAngle += moveAngle
+            if self._cameraVerticalAngle > gpioInfo.getint("SG90", "MaxAngle"):
+                self._cameraVerticalAngle = gpioInfo.getint("SG90", "MaxAngle")
+        if y < 50 and self._cameraVerticalAngle > gpioInfo.getint("SG90", "MinAngle"):
+            moveAngle = self._cameraVerticalAngle * (50 - y) // 100
+            self._cameraVerticalAngle -= moveAngle
+            if self._cameraVerticalAngle < gpioInfo.getint("SG90", "MinAngle"):
+                self._cameraVerticalAngle = gpioInfo.getint("SG90", "MinAngle")
 
         print("Change Horizontal Angle To {}".format(self._cameraHorizontalAngle))
         print("Change Vertical Angle To {}".format(self._cameraVerticalAngle))
 
-        # self._horizontalServomotor.ChangeAngle(self._cameraHorizontalAngle)
-        # self._verticalServomotor.ChangeAngle(self._cameraVerticalAngle)
+        self._horizontalServomotor.ChangeAngle(self._cameraHorizontalAngle)
+        self._verticalServomotor.ChangeAngle(self._cameraVerticalAngle)
         
