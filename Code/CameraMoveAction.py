@@ -15,7 +15,7 @@ class CameraMoveAction(PetAction):
         self._horizontalServomotor = Servomotor("SG90", "PIN32", resetAngle = 90, initAngle= self._cameraHorizontalAngle)
         self._verticalServomotor = Servomotor("SG90", "PIN33", resetAngle = 90, initAngle= self._cameraHorizontalAngle)
 
-    def InitalShareValue(self):
+    def InitialShareValue(self):
         pass
 
     def Run(self):
@@ -32,7 +32,7 @@ class CameraMoveAction(PetAction):
         pass
 
     def HardwareInterface(self, x, y):
-        if self._shareValue._status is MasterDetectorState.LOST:
+        if self._shareValue._faceDetectorStatus is MasterDetectorState.LOST.value:
             return
             
         # Horizontal

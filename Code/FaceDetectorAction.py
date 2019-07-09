@@ -115,12 +115,12 @@ class MasterDetectorState(Enum):
     #Samply not ready
     SAMPLE_NO_READY = "Scanning"
     # Sample ready
-    CATCHED = "Catch" # Master face is be catched
+    CATCHED = "Catched" # Master face is be catched
     LOST = "Lost" # Master face is lose
 
 class MasterDetector:
     def __init__(self, pool, queue):
-        self._status = MasterDetectorState.SAMPLE_NO_READY
+        self._faceDetectorStatus = MasterDetectorState.SAMPLE_NO_READY.value
         # 候選人臉描述子list
         self._descriptors = []
         self._catchArea = None
@@ -219,58 +219,58 @@ class MasterDetector:
             faceInCatch = self._queue.get()
             if(faceInCatch):
                 self._faceLostFramesCount = 0
-                print("get face : True")
+                print("Face Detector Status :",self._faceDetectorStatus)
                 return True
             else:
                 self._faceLostFramesCount += 1
                 faceLostFrames = config.getint('Limit', 'FaceTarckingLostFrames')
                 if(self._faceLostFramesCount >= faceLostFrames):
                     self._faceLostFramesCount = 0
-                    self._status = MasterDetectorState.LOST
-                print("get face : False")
+                    self._faceDetectorStatus = MasterDetectorState.LOST.value
+                print("Face Detector Status :",self._faceDetectorStatus)
                 return False
 
     def Status(self, status = None):
         if status is not None:
-            self._status = status
-        return self._status
+            self._faceDetectorStatus = status
+        return self._faceDetectorStatus
 
     def RunCatchMaster(self, img):
-        if self._status is MasterDetectorState.SAMPLE_NO_READY:
+        if self._faceDetectorStatus is MasterDetectorState.SAMPLE_NO_READY.value:
             IsSampleReady = ScanningMaster(img)
             if IsSampleReady:
                 self.GetSampleDescriptors()
-                self._status = MasterDetectorState.LOST
-            return self._status
+                self._faceDetectorStatus = MasterDetectorState.LOST.value
+            return self._faceDetectorStatus
         
-        if self._status is MasterDetectorState.LOST:
+        if self._faceDetectorStatus is MasterDetectorState.LOST.value:
             if self._descriptors is []:
-                self._status = MasterDetectorState.SAMPLE_NO_READY
+                self._faceDetectorStatus = MasterDetectorState.SAMPLE_NO_READY.value
             catch, facerSimilarRectangle, facerRectangle = self.MasterCatch(img, self._descriptors)
             if(len(facerSimilarRectangle) >= 1):
                 tracker.start_track(img, catch)
                 self._catchArea = catch
-                self._status = MasterDetectorState.CATCHED
+                self._faceDetectorStatus = MasterDetectorState.CATCHED.value
 
-        if self._status is MasterDetectorState.CATCHED:
+        if self._faceDetectorStatus is MasterDetectorState.CATCHED.value:
             tracker.update(img)
             self._catchArea = tracker.get_position()
             if TrackerOverWindow(self._catchArea, img.shape[0], img.shape[1]):
-                self._status = MasterDetectorState.LOST
+                self._faceDetectorStatus = MasterDetectorState.LOST.value
 
         self.CheckCatchAreaIsMaster(img)
 
-        return self._status
+        return self._faceDetectorStatus
 
 class FaceDetectorAction(PetAction):
     
-    def InitalShareValue(self):
+    def InitialShareValue(self):
         self._cm = MasterDetector(self._shareValue._pool, self._shareValue._queue)
 
     def Run(self):
-        self._shareValue._status = self._cm.RunCatchMaster(self._shareValue._img)
+        self._shareValue._faceDetectorStatus = self._cm.RunCatchMaster(self._shareValue._img)
         self._shareValue._catch = self._cm.CatchArea()
-        self._shareValue._imgText = self._shareValue._status.value
+        self._shareValue._imgText = self._shareValue._faceDetectorStatus
         pass
 
     def KeyDown(self):
@@ -278,9 +278,9 @@ class FaceDetectorAction(PetAction):
             for f in glob.glob(os.path.join(config.get('MasterSample', 'Path'), "*.jpg")):
                 print("Delete file: {}".format(f))
                 os.remove(f)
-            self._cm.Status(MasterDetectorState.SAMPLE_NO_READY)
+            self._cm.Status(MasterDetectorState.SAMPLE_NO_READY.value)
         if self._shareValue._keyDown == ord('x'):
-            self._cm.Status(MasterDetectorState.LOST)
+            self._cm.Status(MasterDetectorState.LOST.value)
         pass
         
 if __name__ == "__main__":

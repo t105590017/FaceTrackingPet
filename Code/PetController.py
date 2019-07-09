@@ -16,7 +16,7 @@ class PetAction:
     def __del__(self):
         pass
 
-    def InitalShareValue(self):
+    def InitialShareValue(self):
         raise RuntimeError()
 
     def Run(self):
@@ -35,7 +35,7 @@ class PetController(PetAction):
             cv2.namedWindow(config.get("ShowControl", "CameraImgToWindow_WindowName"), cv2.WINDOW_AUTOSIZE)
         self._shareValue = ShareValue()
         self._shareValue._img = None
-        self._shareValue._stauus = None
+        self._shareValue._faceDetectorStatus = None
         self._shareValue._catch = None
         self._shareValue._imgText = ""
         self._shareValue._keyDown = ""
@@ -50,14 +50,14 @@ class PetController(PetAction):
 
     def AddNewAction(self, action):
         action._shareValue = self._shareValue
-        # action.InitalShareValue()
+        # action.InitialShareValue()
         self._actionList.append(action)
 
     def Run(self):
         cpus = multiprocessing.cpu_count()
         with Pool(processes=cpus) as self._shareValue._pool:
-            for actInitalShareValue in self._actionList:
-                actInitalShareValue.InitalShareValue()
+            for actInitialShareValue in self._actionList:
+                actInitialShareValue.InitialShareValue()
             while(self._cap.isOpened()):
                 # region cap read
                 ret, self._shareValue._img = self._cap.read()
