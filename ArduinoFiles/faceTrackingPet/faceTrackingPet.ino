@@ -50,6 +50,10 @@ const float turn_y0 = temp_b * sin(temp_alpha) - turn_y1 - length_side;
 //serial variable
 char startByte;
 char actionType;
+//Serial接收的訊號
+const char SERIAL_GET = 'G';
+const char SERIAL_FACE = 'F';
+const char SERIAL_HAND = 'H';
 /* ---------------------------------------------------------------------------*/
 
 /*
@@ -125,18 +129,16 @@ void loop()
   {
     startByte = Serial.read();
     //如果接收到訊號
-    if (startByte == 'G')
+    if (startByte == SERIAL_GET)
     {
         actionType = Serial.read();
-        //如果抓到臉(F)
-        if (actionType == 'F')
+        if (actionType == SERIAL_FACE)
         {
           step_forward(1);
           //清空Serial佇列
           while(Serial.read() >= 0){}
         }
-        //如果抓到手(H)
-        else if (actionType == 'H')
+        else if (actionType == SERIAL_HAND)
         {
           hand_wave(3);
           //清空Serial佇列
