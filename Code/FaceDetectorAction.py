@@ -80,6 +80,8 @@ def ScanningMaster(img):
 
         faceImg = img[face_rects[0].top(): face_rects[0].bottom(),
                     face_rects[0].left(): face_rects[0].right()]
+        if faceImg.size == 0:
+            return False
         imageVar = getImageVar(faceImg)
 
         print(imageVar)
