@@ -19,10 +19,10 @@ class CameraMoveAction(PetAction):
         pass
 
     def Run(self):
-        imgH, imgW = self._shareValue._img.shape[:2]
-        if self._shareValue._catch is not None:
-            catchX = (int(self._shareValue._catch.left()) + int(self._shareValue._catch.right())) / 2
-            catchY = (int(self._shareValue._catch.top()) + int(self._shareValue._catch.bottom())) / 2
+        imgH, imgW = self._shareValue.SourceImage.shape[:2]
+        if self._shareValue.FaceCatchArea is not None:
+            catchX = (int(self._shareValue.FaceCatchArea.left()) + int(self._shareValue.FaceCatchArea.right())) / 2
+            catchY = (int(self._shareValue.FaceCatchArea.top()) + int(self._shareValue.FaceCatchArea.bottom())) / 2
             self.HardwareInterface(catchX * 100 // imgW, catchY * 100 // imgH)
         else:
             self.HardwareInterface(50, 50)
@@ -32,7 +32,7 @@ class CameraMoveAction(PetAction):
         pass
 
     def HardwareInterface(self, x, y):
-        if self._shareValue._faceDetectorStatus is MasterDetectorState.LOST:
+        if self._shareValue.FaceDetectorStatus is MasterDetectorState.LOST:
             return
             
         # Horizontal
