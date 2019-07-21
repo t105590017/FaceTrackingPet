@@ -29,7 +29,7 @@ class SerialAction(PetAction):
 
     def Run(self):
         #如果抓到臉就傳送訊號
-        if (self._shareValue._faceDetectorStatus == MasterDetectorState.CATCHED.value):
+        if (self._shareValue._faceDetectorStatus == MasterDetectorState.CATCHED):
             self._serial.write(SerialSignalEnum.GET.value.encode())
             self._serial.write(SerialSignalEnum.FACE.value.encode())
             print("Get face and send serial signal")

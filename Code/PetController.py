@@ -96,7 +96,7 @@ class PetController(PetAction):
             self._shareValue._pool.terminate()
             self._shareValue._pool.join()
 
-        raise RuntimeError("process end")
+        return
         # 釋放攝影機
         self._cap.release()
         # cv2.destroyAllWindows()
