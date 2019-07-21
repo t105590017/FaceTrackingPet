@@ -32,7 +32,7 @@ class CameraMoveAction(PetAction):
         pass
 
     def HardwareInterface(self, x, y):
-        if self._shareValue._faceDetectorStatus is MasterDetectorState.LOST.value:
+        if self._shareValue._faceDetectorStatus is MasterDetectorState.LOST:
             return
             
         # Horizontal
