@@ -1,3 +1,7 @@
+#####################################################################
+# 新增共用變數(self._shareValue)                                     
+#   FaceDetectorStatus = [MasterDetectorState]    => 臉臉檢測狀態    
+#####################################################################
 import sys
 import os
 import dlib
@@ -205,6 +209,8 @@ class MasterDetector:
         return catch, facerSimilarRectangle, facerRectangle
 
     def CatchArea(self):
+        if self._faceDetectorStatus is MasterDetectorState.LOST:
+            return None
         return self._catchArea
 
     def CheckCatchAreaIsMaster(self, img):
@@ -260,28 +266,38 @@ class MasterDetector:
             if TrackerOverWindow(self._catchArea, img.shape[0], img.shape[1]):
                 self._faceDetectorStatus = MasterDetectorState.LOST
 
-        self.CheckCatchAreaIsMaster(img)
+        # self.CheckCatchAreaIsMaster(img)
 
         return self._faceDetectorStatus
 
 class FaceDetectorAction(PetAction):
-    
+    def __init__(self):
+        self._detectorFpsCount = 0
+        self._detectorFPS = config.getint("Limit", "DetectorFPS")
+
     def InitialShareValue(self):
-        self._cm = MasterDetector(self._shareValue._pool, self._shareValue._queue)
+        self._shareValue.FaceDetectorStatus = MasterDetectorState.SAMPLE_NO_READY
+        self._cm = MasterDetector(self._shareValue.MultiprocessingPool, self._shareValue._queue)
 
     def Run(self):
-        self._shareValue._faceDetectorStatus = self._cm.RunCatchMaster(self._shareValue._img)
-        self._shareValue._catch = self._cm.CatchArea()
-        self._shareValue._imgText = self._shareValue._faceDetectorStatus.value
+        self._shareValue.FaceDetectorStatus = self._cm.RunCatchMaster(self._shareValue.SourceImage)
+        self._shareValue.FaceCatchArea = self._cm.CatchArea()
+
+        self.ShowTextInWindow(text = self._shareValue.FaceDetectorStatus.value)
+
+        if self._detectorFpsCount >= self._detectorFPS :
+            self._detectorFpsCount = 0
+            self._cm.CheckCatchAreaIsMaster(self._shareValue.SourceImage)
+        self._detectorFpsCount += 1
         pass
 
     def KeyDown(self):
-        if self._shareValue._keyDown == ord('r'):
+        if self._shareValue.KeyDown == ord('r'):
             for f in glob.glob(os.path.join(config.get('MasterSample', 'Path'), "*.jpg")):
                 print("Delete file: {}".format(f))
                 os.remove(f)
             self._cm.Status(MasterDetectorState.SAMPLE_NO_READY)
-        if self._shareValue._keyDown == ord('x'):
+        if self._shareValue.KeyDown == ord('x'):
             self._cm.Status(MasterDetectorState.LOST)
         pass
         
