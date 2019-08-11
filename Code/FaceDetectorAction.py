@@ -19,6 +19,16 @@ from PetController import PetAction
 #region 公用參數
 config = configparser.ConfigParser()
 config.read("Config.ini")
+catchAreaThreshol = config.getint("MasterSample", "Threshold")
+catchFileTotal = config.getint("MasterSample", "Total")
+MasterSamplePath = config.get("MasterSample", "Path")
+ShowControlTerminalMessageCatchFaceExist = config.getboolean("ShowControl", "TerminalMessage_CatchFaceExist")
+# 樣本目錄
+faces_folder_path = config.get("MasterSample", "Path")
+euclideanDistanceThreshold = config.getfloat("MasterRecognize", "EuclideanDistanceThreshold")
+MultiProcessingEnable = config.getboolean('Enable', 'MultiProcessing')
+faceLostFrames = config.getint('Limit', 'FaceTarckingLostFrames')
+MasterSamplePath = config.get('MasterSample', 'Path')
 # 載入正臉檢測器 Dlib 的人臉偵測器
 detector = dlib.get_frontal_face_detector()
 # 載入人臉關鍵點檢測器
@@ -63,9 +73,6 @@ def Get68FaceFromImg(img):
     return descriptors
 
 def ScanningMaster(img):
-        catchAreaThreshol = config.getint("MasterSample", "Threshold")
-        catchFileTotal = config.getint("MasterSample", "Total")
-        MasterSamplePath = config.get("MasterSample", "Path")
 
         if not os.path.isdir(MasterSamplePath):
             os.mkdir(MasterSamplePath)
@@ -78,7 +85,7 @@ def ScanningMaster(img):
         # 偵測人臉
         face_rects = detector(img, 0)
         if(len(face_rects) != 1):
-            if(config.getboolean("ShowControl", "TerminalMessage_CatchFaceExist")):
+            if(ShowControlTerminalMessageCatchFaceExist):
                 print("Can\"n catch face")
             return False
 
@@ -138,8 +145,6 @@ class MasterDetector:
         pass
 
     def GetSampleDescriptors(self):
-        # 樣本目錄
-        faces_folder_path = config.get("MasterSample", "Path")
         # 對資料夾下的每一個人臉進行:
         # 1.人臉檢測
         # 2.關鍵點檢測
@@ -162,7 +167,6 @@ class MasterDetector:
         return self._descriptors
 
     def MasterCatch(self, imgTarget, descriptors):
-        euclideanDistanceThreshold = config.getfloat("MasterRecognize", "EuclideanDistanceThreshold")
 
         # 對需識別人臉進行同樣處理
         # 提取描述子
@@ -214,7 +218,7 @@ class MasterDetector:
         return self._catchArea
 
     def CheckCatchAreaIsMaster(self, img):
-        if not config.getboolean('Enable', 'MultiProcessing'):
+        if not MultiProcessingEnable:
             return None
 
         if self._catchArea is not None:
@@ -231,7 +235,6 @@ class MasterDetector:
                 return True
             else:
                 self._faceLostFramesCount += 1
-                faceLostFrames = config.getint('Limit', 'FaceTarckingLostFrames')
                 if(self._faceLostFramesCount >= faceLostFrames):
                     self._faceLostFramesCount = 0
                     self._faceDetectorStatus = MasterDetectorState.LOST
@@ -293,7 +296,7 @@ class FaceDetectorAction(PetAction):
 
     def KeyDown(self):
         if self._shareValue.KeyDown == ord('r'):
-            for f in glob.glob(os.path.join(config.get('MasterSample', 'Path'), "*.jpg")):
+            for f in glob.glob(os.path.join(MasterSamplePath, "*.jpg")):
                 print("Delete file: {}".format(f))
                 os.remove(f)
             self._cm.Status(MasterDetectorState.SAMPLE_NO_READY)
