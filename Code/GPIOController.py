@@ -11,6 +11,8 @@ config.read("Config.ini")
 gpioInfo = ConfigParser()
 gpioInfo.read("gpioConfig.ini")
 
+ShowControlTerminalMessageGPIOResult = config.getboolean("ShowControl","TerminalMessage_GPIOResult")
+
 class NormalGPIO:
     def __init__(self):
         self.usingList = []
@@ -24,12 +26,12 @@ class NormalGPIO:
 
     def Export(self, pinNumber, direction = "out"):
         if pinNumber not in self._gpioMap:
-            if config.getboolean("ShowControl","TerminalMessage_GPIOResult") :
+            if ShowControlTerminalMessageGPIOResult :
                 print("{0}[ERROR]{1} pin number {2} can't be use !!".format(Fore.RED, Fore.RESET, pinNumber))
             return False
 
         if pinNumber.upper() in self.usingList:
-            if config.getboolean("ShowControl","TerminalMessage_GPIOResult") :
+            if ShowControlTerminalMessageGPIOResult :
                 print("{0}[ERROR]{1} pin number {2} has be used !!".format(Fore.RED, Fore.RESET, pinNumber))
             return False
 
@@ -37,7 +39,7 @@ class NormalGPIO:
         os.system("echo " + self._gpioMap[pinNumber] + " > /sys/class/gpio/export")
         os.system("echo " + direction + " > /sys/class/gpio/gpio" + self._gpioMap[pinNumber] + "/direction")        
         
-        if config.getboolean("ShowControl","TerminalMessage_GPIOResult") :
+        if ShowControlTerminalMessageGPIOResult :
             print("{0}[SUCCESS]{1} pin number {2} export".format(Fore.GREEN, Fore.RESET, pinNumber))
         self.usingList.append(pinNumber.upper())
         return True
@@ -47,7 +49,7 @@ class NormalGPIO:
             
             for gpio in self.usingList:
                 os.system("echo " + self._gpioMap[gpio] + " > /sys/class/gpio/unexport")
-                if config.getboolean("ShowControl","TerminalMessage_GPIOResult") :
+                if ShowControlTerminalMessageGPIOResult :
                     print("{0}[SUCCESS]{1} pin number {2} unexport".format(Fore.GREEN, Fore.RESET, pinNumber))
             
             self.usingList.clear()
@@ -55,41 +57,41 @@ class NormalGPIO:
             return True
 
         if pinNumber.upper() not in self.usingList:
-            if config.getboolean("ShowControl","TerminalMessage_GPIOResult") :
+            if ShowControlTerminalMessageGPIOResult :
                 print("{0}[ERROR]{1} pin number {2} can't be unexport !!".format(Fore.RED, Fore.RESET, pinNumber))
             return False
 
         
         os.system("echo " + self._gpioMap[pinNumber] + " > /sys/class/gpio/unexport")
         
-        if config.getboolean("ShowControl","TerminalMessage_GPIOResult") :
+        if ShowControlTerminalMessageGPIOResult :
             print(Fore.GREEN + "[SUCCESS]" + Fore.RESET + " pin number "+ pinNumber + " unexport")
         self.usingList.remove(pinNumber.upper())
         return True
 
     def Value(self, pinNumber, value):
         if pinNumber.upper() not in self.usingList:
-            if config.getboolean("ShowControl","TerminalMessage_GPIOResult") :
+            if ShowControlTerminalMessageGPIOResult :
                 print("{0}[ERROR]{1} pin number {2} is not export !!".format(Fore.RED, Fore.RESET, pinNumber))
             return False
 
         
         os.system("echo " + value + " > /sys/class/gpio/gpio" + self._gpioMap[pinNumber] + "/value")
         
-        if config.getboolean("ShowControl","TerminalMessage_GPIOResult") :
+        if ShowControlTerminalMessageGPIOResult :
             print("{0}[SUCCESS]{1} pin number {2} set value to {3}".format(Fore.GREEN, Fore.RESET, pinNumber, value))
         return True
 
     def Direction(self, pinNumber, direction):
         if pinNumber.upper() not in self.usingList:
-            if config.getboolean("ShowControl","TerminalMessage_GPIOResult") :
+            if ShowControlTerminalMessageGPIOResult :
                 print("{0}[ERROR]{1} pin number {2} is not export !!".format(Fore.RED, Fore.RESET, pinNumber))
             return False
 
         
         os.system("echo " + direction + " > /sys/class/gpio/gpio" + self._gpioMap[pinNumber] + "/direction")
         
-        if config.getboolean("ShowControl","TerminalMessage_GPIOResult") :
+        if ShowControlTerminalMessageGPIOResult :
             print("{0}[SUCCESS]{1} pin number {2} set direction to {3}".format(Fore.GREEN, Fore.RESET, pinNumber, direction))
         return True
         
@@ -106,19 +108,19 @@ class PwmGPIO:
 
     def Export(self, pinNumber):
         if pinNumber not in self._gpioMap:
-            if config.getboolean("ShowControl","TerminalMessage_GPIOResult") :
+            if ShowControlTerminalMessageGPIOResult :
                 print("{0}[ERROR]{1} pin number {2} can't be use !!".format(Fore.RED, Fore.RESET, pinNumber))
             return False
 
         if pinNumber.upper() in self.usingList:
-            if config.getboolean("ShowControl","TerminalMessage_GPIOResult") :
+            if ShowControlTerminalMessageGPIOResult :
                 print("{0}[ERROR]{1} pin number {2} has be used !!".format(Fore.RED, Fore.RESET, pinNumber))
             return False
 
         
         os.system("echo 0 > /sys/class/pwm/" + self._gpioMap[pinNumber] + "/export")      
         
-        if config.getboolean("ShowControl","TerminalMessage_GPIOResult") :
+        if ShowControlTerminalMessageGPIOResult :
             print("{0}[SUCCESS]{1} pin number {2} export".format(Fore.GREEN, Fore.RESET, pinNumber))
         self.usingList.append(pinNumber.upper())
 
@@ -134,26 +136,26 @@ class PwmGPIO:
             return True
 
         if pinNumber.upper() not in self.usingList:
-            if config.getboolean("ShowControl","TerminalMessage_GPIOResult") :
+            if ShowControlTerminalMessageGPIOResult :
                 print("{0}[ERROR]{1} pin number {2} can't be unexport !!".format(Fore.RED, Fore.RESET, pinNumber))
             return False
 
         
         os.system("echo 0 > /sys/class/pwm/" + self._gpioMap[pinNumber] + "/unexport")
         
-        if config.getboolean("ShowControl","TerminalMessage_GPIOResult") :
+        if ShowControlTerminalMessageGPIOResult :
             print(Fore.GREEN + "[SUCCESS]" + Fore.RESET + " pin number "+ pinNumber + " unexport")
         self.usingList.remove(pinNumber.upper())
         return True
 
     def Period(self, pinNumber, period):
         if pinNumber.upper() not in self.usingList:
-            if config.getboolean("ShowControl","TerminalMessage_GPIOResult") :
+            if ShowControlTerminalMessageGPIOResult :
                 print("{0}[ERROR]{1} pin number {2} is not export !!".format(Fore.RED, Fore.RESET, pinNumber))
             return False
         
         if period < 0:
-            if config.getboolean("ShowControl","TerminalMessage_GPIOResult") :
+            if ShowControlTerminalMessageGPIOResult :
                 print("{0}[ERROR]{1} pin number {2} must > 1 !!".format(Fore.RED, Fore.RESET, pinNumber))
             return False
 
@@ -161,39 +163,39 @@ class PwmGPIO:
         os.system("echo " + str(period) + " > /sys/class/pwm/" + self._gpioMap[pinNumber] + "/pwm0/period")      
         
         self._period = period
-        if config.getboolean("ShowControl","TerminalMessage_GPIOResult") :
+        if ShowControlTerminalMessageGPIOResult :
             print("{0}[SUCCESS]{1} pin number {2} set period to {3}".format(Fore.GREEN, Fore.RESET, pinNumber, period))
         return True
 
     def DutyCycle(self, pinNumber, dutyCycle):
         dutyCycle = int(dutyCycle)
         if pinNumber.upper() not in self.usingList:
-            if config.getboolean("ShowControl","TerminalMessage_GPIOResult") :
+            if ShowControlTerminalMessageGPIOResult :
                 print("{0}[ERROR]{1} pin number {2} is not export !!".format(Fore.RED, Fore.RESET, pinNumber))
             return False
 
         if dutyCycle > self._period:
-            if config.getboolean("ShowControl","TerminalMessage_GPIOResult") :
+            if ShowControlTerminalMessageGPIOResult :
                 print("{0}[ERROR]{1} pin number {2} period must larger than dutyCycle !!".format(Fore.RED, Fore.RESET, pinNumber))
             return False
 
         
         os.system("echo " + str(int(dutyCycle)) + " > /sys/class/pwm/" + self._gpioMap[pinNumber] + "/pwm0/duty_cycle")      
         
-        if config.getboolean("ShowControl","TerminalMessage_GPIOResult") :
+        if ShowControlTerminalMessageGPIOResult :
             print("{0}[SUCCESS]{1} pin number {2} set dutyCycle to {3}".format(Fore.GREEN, Fore.RESET, pinNumber, int(dutyCycle)))
         return True
 
     def Enable(self, pinNumber, enable = True):
         if pinNumber.upper() not in self.usingList:
-            if config.getboolean("ShowControl","TerminalMessage_GPIOResult") :
+            if ShowControlTerminalMessageGPIOResult :
                 print("{0}[ERROR]{1} pin number {2} is not export !!".format(Fore.RED, Fore.RESET, pinNumber))
             return False
 
         
         os.system("echo " + str(1 if enable else 0) + " > /sys/class/pwm/" + self._gpioMap[pinNumber] + "/pwm0/enable")      
         
-        if config.getboolean("ShowControl","TerminalMessage_GPIOResult") :
+        if ShowControlTerminalMessageGPIOResult :
             print("{0}[SUCCESS]{1} pin number {2} set enable to {3}".format(Fore.GREEN, Fore.RESET, pinNumber, 1 if enable else 0))
         return True
 

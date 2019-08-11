@@ -28,6 +28,9 @@ from multiprocessing import Pool
 config = configparser.ConfigParser()
 config.read("Config.ini")
 
+ShowControlCameraImgToWindow = config.getboolean("ShowControl", "CameraImgToWindow")
+ShowControlCameraImgToWindowName = config.get("ShowControl", "CameraImgToWindow_WindowName")
+
 class PetAction:
     def __init__(self):
         self._shareValue = None
@@ -57,8 +60,8 @@ class PetController(PetAction):
     def __init__(self):
         CAMERA_INDEX = config.getint("Camera", "Index")
         self._cap = cv2.VideoCapture(CAMERA_INDEX)
-        if (config.getboolean("ShowControl", "CameraImgToWindow")):
-            cv2.namedWindow(config.get("ShowControl", "CameraImgToWindow_WindowName"), cv2.WINDOW_AUTOSIZE)
+        if (ShowControlCameraImgToWindow):
+            cv2.namedWindow(ShowControlCameraImgToWindowName, cv2.WINDOW_AUTOSIZE)
         self._shareValue = ShareValue()
         self._shareValue.SourceImage = None
         self._shareValue.ShowImage = None
@@ -103,8 +106,8 @@ class PetController(PetAction):
                                     (int(self._shareValue.FaceCatchArea.right()), int(self._shareValue.FaceCatchArea.bottom())),
                                     (0, 0, 255), 4, cv2.LINE_AA)
 
-                if (config.getboolean("ShowControl", "CameraImgToWindow")):
-                    cv2.imshow(config.get("ShowControl", "CameraImgToWindow_WindowName"), self._shareValue.ShowImage)
+                if (ShowControlCameraImgToWindow):
+                    cv2.imshow(ShowControlCameraImgToWindowName, self._shareValue.ShowImage)
 
                 # endregion
 
