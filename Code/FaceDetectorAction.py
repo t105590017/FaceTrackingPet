@@ -140,6 +140,7 @@ class MasterDetector:
         self._pool = pool
         self._queue = queue
         self._faceLostFramesCount = 0
+        self._poolCounter = 0
 
     def __del__(self):
         pass
@@ -221,13 +222,15 @@ class MasterDetector:
         if not MultiProcessingEnable:
             return None
 
-        if self._catchArea is not None:
+        if self._catchArea is not None and self._poolCounter < multiprocessing.cpu_count():
+            self._poolCounter += 1
             self._pool.apply_async(TrackerAreaExistFace,
                             args=(self._queue, img[int(self._catchArea.top()):int(self._catchArea.bottom()),
                                         int(self._catchArea.left()):int(self._catchArea.right())], ),
                             error_callback=handle_error)
 
         if(not self._queue.empty()):
+            self._poolCounter -= 1
             faceInCatch = self._queue.get()
             if(faceInCatch):
                 self._faceLostFramesCount = 0
